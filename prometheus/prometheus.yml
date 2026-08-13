@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: "cost-backend"
+    static_configs:
+      - targets: ["backend:8000"]
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+rule_files:
+  - alert.yml
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]

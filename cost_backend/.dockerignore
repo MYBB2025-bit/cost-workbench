@@ -1,0 +1,19 @@
+# 后端镜像构建上下文：排除无关/敏感/体积大的内容
+.git
+.github
+.workbuddy
+__pycache__
+*.pyc
+.venv
+venv
+.env
+.env.example
+*.db
+tests
+prometheus
+docs
+archive
+data
+node_modules
+dist
+*.log

@@ -1,0 +1,33 @@
+[tool.ruff]
+# 行宽：放宽到 100，匹配现代 Python 习惯
+line-length = 100
+target-version = "py311"
+src = ["."]
+
+[tool.ruff.lint]
+# 启用的规则集：风格 + 错误 + 导入排序 + 常见 bug + 现代化写法
+select = [
+    "E",   # pycodestyle 错误（缩进/空格/换行）
+    "F",   # pyflakes（未定义/未使用/重定义）
+    "I",   # isort 导入排序
+    "B",   # flake8-bugbear（易错写法）
+    "UP",  # pyupgrade（现代化语法）
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    "E501",   # 行长交由格式化器管理，CI 不卡行宽
+    "B008",   # FastAPI 在装饰器里用函数调用（Depends/...）属惯用法
+    "B904",   # 允许 raise 不包裹原异常（业务异常自包含）
+    "SIM105", # 允许 try/except/else 写法
+    "SIM108", # 允许 if-else 表达式
+    "UP007",  # 允许 Optional[X] 写法（与 sqlalchemy 风格一致）
+    "UP009",  # 允许 unittest 风格保留
+]
+
+[tool.ruff.lint.per-file-ignores]
+# 测试文件允许魔法值/断言写法
+"tests/*" = ["B", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["api", "core", "db", "service", "repository", "utils", "tasks", "models"]

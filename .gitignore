@@ -1,0 +1,36 @@
+# 依赖 / 构建产物
+node_modules/
+cost_web/dist/
+__pycache__/
+*.pyc
+.venv/
+envs/
+
+# 本地数据库与运行时数据
+*.db
+*.sqlite
+uploads/
+cost_backend/uploads/
+
+# 环境变量与密钥（仅提交 .env.example）
+.env
+.env.local
+
+# 发布历史（部署态，不入库）
+releases/history.json
+
+# 操作系统 / 编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+
+# 183MB 真实业务数据（迁移源文件，不入库；CI 仅引用做冒烟）
+data/
+
+# 会话/项目记忆（不入库）
+.workbuddy/
+
+# 归档旧产物
+dist-old-*/
+archive/

@@ -1,0 +1,32 @@
+:root {
+  --c-primary: #1f6feb;
+  --c-bg: #f5f7fa;
+  --c-header: #001529;
+  --c-text: #303133;
+  --c-border: #e4e7ed;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color: var(--c-text);
+  background: var(--c-bg);
+}
+
+.page-card {
+  margin: 16px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}

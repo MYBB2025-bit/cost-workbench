@@ -1,0 +1,17 @@
+groups:
+  - name: cost_workbench_alerts
+    rules:
+      - alert: ApiHighErrorRate
+        expr: sum(rate(http_requests_total{status=~"5.."}[1m])) / sum(rate(http_requests_total[1m])) > 0.05
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "API 5xx 错误率超过 5%"
+      - alert: PatchDownloadSlow
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{uri=~".*patch/download.*"}[5m])) by (le)) > 10
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "补丁下载 P95 延迟 > 10s，带宽压力大"

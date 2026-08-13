@@ -1,0 +1,12 @@
+# 前端镜像构建上下文：排除依赖缓存与产物（容器内会重新构建）
+.git
+.github
+.workbuddy
+node_modules
+dist
+__pycache__
+.env
+.env.example
+*.log
+docs
+archive
