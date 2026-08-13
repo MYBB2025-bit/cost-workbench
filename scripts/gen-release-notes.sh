@@ -71,7 +71,7 @@ if [ "$IS_GIT" -eq 1 ]; then
   )
 
   # 统计每个模块的提交数
-  declare -A HITS
+  declare -A HITS=()
   while IFS= read -r line; do
     subject="${line#* }"
     matched=0

@@ -32,7 +32,7 @@ cost_backend/
 ├─ repository/               数据层
 ├─ utils/                    storage(MinIO本地降级) / md5 / audit / version
 ├─ tools/client_updater.py   客户端 exe 自更新器(bsdiff)
-└─ tests/                    pytest（领域单测 + API 冒烟，10 项全绿）
+└─ tests/                    pytest（领域单测 + API 冒烟 + 异步/日志/迁移，46 项全绿）
 
 cost_web/
 ├─ src/api/                  axios 封装 + 各模块请求
@@ -97,3 +97,56 @@ pytest tests -v            # 10 passed（领域逻辑 + API 全链路，含补�
 
 - `prometheus/prometheus.yml` + `alert.yml`：API 5xx 错误率、补丁下载 P95 延迟告警
 - 后端已通过 `prometheus-fastapi-instrumentator` 暴露 `/metrics`（依赖可选，未安装不影响主流程）
+- **Loki 日志聚合**：后端/worker 用应用内 `LokiHandler` 直接 push 结构化 JSON 日志；前端由 Promtail 抓取容器 stdout；Grafana（:3000）预置 Loki 数据源可视化。
+
+## 测试
+
+```bash
+cd cost_backend
+pytest tests -v            # 46 passed（领域逻辑 + API 全链路 + Celery 异步 + Loki + 183MB 数据迁移冒烟）
+# 前端
+cd ../cost_web && npm run build   # vue-tsc 零错误
+# 一键本地 CI（复刻 GitHub Actions）
+make ci
+```
+
+## 发布流程闭环
+
+把 **版本打标 → CI 构建 → 发布说明 → 一键部署/回滚** 串成一个闭环。
+
+### 1. 版本与镜像打标
+- 根目录 `VERSION` 文件是唯一版本源（语义化版本，如 `1.0.0`）。
+- `docker-compose.yml` 的四个服务镜像统一为 `cost-{backend,worker,flower,web}:${IMAGE_TAG:-latest}`；可选 `DOCKER_REGISTRY` 前缀支持推送私有/公共仓库（如 `ghcr.io/<org>/`）。
+- 本地开发：`docker compose up -d --build`（用 build 上下文现编，标签 latest）。
+- 版本化部署：`IMAGE_TAG=1.0.0 docker compose up -d`。
+
+### 2. CI（`.github/workflows/ci.yml`）
+- `backend`：Python 3.11/3.12 矩阵，ruff + pytest（SQLite 降级 + Celery eager）。
+- `frontend`：Node 20，`npm ci` + `npm run build`。
+- `docker`（仅 main 推送）：镜像打标 `:<version>` / `:latest` / `:sha-<sha>`。
+- `release`（仅 `v*` 标签推送）：构建全部镜像 → `scripts/gen-release-notes.sh` 生成发布说明 → `docker save` 打包镜像 tarball → 通过 `softprops/action-gh-release` 创建 GitHub Release（含说明 + 镜像 tarball）。
+
+### 3. 发布说明生成
+```bash
+bash scripts/gen-release-notes.sh 1.1.0 > RELEASES.md
+```
+基于 git 历史（上一 tag → 当前版本），按模块（Celery / Loki / 前端增强 / CI / 数据迁移 / 发布闭环）归纳变更并列出提交明细。非 git 环境下退化为仅输出版本与日期。
+
+### 4. 一键脚本
+```bash
+make release v=1.1.0     # 升版 + 构建版本化镜像 + 生成说明 + 更新 CHANGELOG + 写 .env(IMAGE_TAG)
+make deploy  v=1.1.0     # 按版本拉起（docker compose up -d），并记入 releases/history.log
+make rollback            # 回退到 history 中上一部署版本并重部署
+```
+等价脚本：`scripts/release.sh` / `scripts/deploy.sh` / `scripts/rollback.sh`。部署历史存于 `releases/history.log`（纯文本，每行 `版本 时间 git_sha [rollback-from-xxx]`），供回滚解析。
+
+### 5. 完整闭环示例
+```bash
+git tag v1.1.0 && git push origin v1.1.0      # 触发 CI release 作业 → 自动建 GitHub Release
+make deploy v=1.1.0                            # 在目标机拉起 v1.1.0
+# 出问题：
+make rollback                                 # 自动回到 v1.0.0
+```
+
+> 接入远程仓库后才生效：`git remote add origin <url> && git push -u origin main --tags`。当前仓库已 `git init` 并提交 `v1.0.0` 基线。
+

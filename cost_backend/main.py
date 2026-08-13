@@ -1,12 +1,15 @@
-"""入口：装配路由、CORS、生命周期（建表+初始管理员）、Prometheus 监控、Loki 日志聚合。"""
+"""入口：装配路由、CORS、生命周期（建表+初始管理员）、Prometheus 监控、Loki 日志聚合、前端静态托管。"""
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from core.config import settings
 from db.session import SessionLocal, init_db
@@ -49,7 +52,14 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title=settings.APP_NAME, version="1.0.0", lifespan=lifespan)
+app = FastAPI(
+    title=settings.APP_NAME,
+    description="造价驻场工作台后端 API",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -118,6 +128,45 @@ async def health():
 
 if _HAS_PROM:
     Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+
+
+# ---------- 中文 Swagger 文档（离线静态资源） ----------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+FRONTEND_DIST_DIR = os.path.normpath(os.path.join(BASE_DIR, "..", "cost_web", "dist"))
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    html = get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{settings.APP_NAME} - API 文档",
+        swagger_js_url="/static/swagger/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger/swagger-ui.css",
+        swagger_favicon_url="/static/swagger/favicon-32x32.png",
+    )
+    # 离线汉化常见 UI 文案（DOM 文本替换）
+    i18n_script = (
+        "<script>"
+        "(function(){"
+        "var dict={"
+        "'Authorize':'授权','Schemas':'模型','Responses':'响应','Parameters':'参数',"
+        "'Request body':'请求体','Execute':'执行','Clear':'清空','Try it out':'试一试',"
+        "'Cancel':'取消','Download':'下载','Overview':'概览','Authentication':'认证',"
+        "'Value':'值','Description':'描述','Required':'必填','Example value':'示例值',"
+        "'Model':'模型','Servers':'服务地址','No parameters':'无参数','Responses codes':'响应码'};"
+        "function tr(){var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null,false),n;"
+        "while(n=w.nextNode()){var t=n.nodeValue.trim();if(dict[t])n.nodeValue=dict[t];}}"
+        "var o=new MutationObserver(tr);o.observe(document.body,{childList:true,subtree:true});"
+        "setTimeout(tr,300);setTimeout(tr,800);})();"
+        "</script>"
+    )
+    new_body = html.body.replace(b"</body>", i18n_script.encode("utf-8") + b"</body>")
+    return HTMLResponse(content=new_body)
+
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend")
 
 
 if __name__ == "__main__":

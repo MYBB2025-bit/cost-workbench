@@ -67,6 +67,63 @@ async def collect_warning_items(db: AsyncSession, project_ids: list[int]) -> lis
     return warnings
 
 
+def _serialize_risk(r) -> dict:
+    return {
+        "id": r.id,
+        "project_id": r.project_id,
+        "risk_type": r.risk_type,
+        "level": r.level,
+        "title": r.title,
+        "desc": r.desc,
+        "due": r.due,
+        "status": r.status,
+        "related_type": r.related_type,
+        "related_id": r.related_id,
+    }
+
+
+async def create_risk_item(db: AsyncSession, data: dict) -> dict:
+    """新增风险项（schema 已就绪，原路由遗漏此方法）。"""
+    item = CostRiskItem(
+        project_id=data.get("project_id"),
+        risk_type=data.get("risk_type"),
+        level=data.get("level"),
+        title=data.get("title"),
+        desc=data.get("desc"),
+        due=data.get("due"),
+        status=data.get("status") or "open",
+        related_type=data.get("related_type"),
+        related_id=data.get("related_id"),
+    )
+    db.add(item)
+    await db.commit()
+    await db.refresh(item)
+    return _serialize_risk(item)
+
+
+async def update_risk_item(db: AsyncSession, item_id: int, data: dict) -> dict | None:
+    res = await db.execute(select(CostRiskItem).where(CostRiskItem.id == item_id))
+    item = res.scalars().first()
+    if not item:
+        return None
+    for k in ("risk_type", "level", "title", "desc", "due", "status", "related_type", "related_id"):
+        if k in data and data[k] is not None:
+            setattr(item, k, data[k])
+    await db.commit()
+    await db.refresh(item)
+    return _serialize_risk(item)
+
+
+async def delete_risk_item(db: AsyncSession, item_id: int) -> bool:
+    res = await db.execute(select(CostRiskItem).where(CostRiskItem.id == item_id))
+    item = res.scalars().first()
+    if not item:
+        return False
+    await db.delete(item)
+    await db.commit()
+    return True
+
+
 def _parse_date(s):
     if not s:
         return None
