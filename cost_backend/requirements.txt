@@ -1,6 +1,6 @@
 fastapi
 uvicorn[standard]
-sqlalchemy[async]
+sqlalchemy
 aiosqlite
 asyncpg
 pydantic
@@ -16,3 +16,5 @@ prometheus-fastapi-instrumentator
 pytest
 pytest-asyncio
 httpx
+openpyxl
+bsdiff4
