@@ -7,6 +7,8 @@ import base64
 import json
 import os
 
+import pytest
+
 API = "/api/v1"
 
 
