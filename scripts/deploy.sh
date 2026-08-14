@@ -47,14 +47,17 @@ echo "${VERSION} ${TS} ${SHA}" >> releases/history.log
 
 echo "==> 部署版本 v${VERSION} (git_sha=${SHA})"
 
-# 若配置了镜像仓库，则先拉取；否则使用本地已构建镜像
-if [ -n "${DOCKER_REGISTRY:-}" ]; then
-  echo "--> 从仓库 ${DOCKER_REGISTRY} 拉取镜像"
-  docker compose pull
+# 拉起容器（无 docker 时跳过，仅记录部署版本）
+if command -v docker >/dev/null 2>&1; then
+  if [ -n "${DOCKER_REGISTRY:-}" ]; then
+    echo "--> 从仓库 ${DOCKER_REGISTRY} 拉取镜像"
+    docker compose pull
+  fi
+  docker compose up -d
+  echo
+  echo "✅ 已部署 v${VERSION}。访问 http://localhost （前端 80 / 后端 8000 / Grafana 3000）"
+else
+  echo "⚠️ 未检测到 docker，跳过容器拉起；部署版本 v${VERSION} 已记入 releases/history.log"
 fi
-
-docker compose up -d
-echo
-echo "✅ 已部署 v${VERSION}。访问 http://localhost （前端 80 / 后端 8000 / Grafana 3000）"
 echo "    部署历史："
 tail -n 5 releases/history.log

@@ -24,18 +24,21 @@ NEWVER="${NEWVER#v}"
 echo "$NEWVER" > VERSION
 echo "==> 版本号已更新为 v${NEWVER}"
 
-# 2) 构建版本化镜像（本地）
-echo "==> 构建镜像 v${NEWVER}"
-docker build -t "cost-backend:${NEWVER}"  -f cost_backend/Dockerfile cost_backend
-docker build -t "cost-worker:${NEWVER}"   -f cost_backend/Dockerfile cost_backend
-docker build -t "cost-flower:${NEWVER}"   -f cost_backend/Dockerfile cost_backend
-docker build -t "cost-web:${NEWVER}"      -f cost_web/Dockerfile cost_web
-
-# 同时打 latest 标签，便于本地 latest 部署
-for s in backend worker flower web; do
-  docker tag "cost-${s}:${NEWVER}" "cost-${s}:latest"
-done
-echo "✓ 镜像已构建并打标 :${NEWVER} / :latest"
+# 2) 构建版本化镜像（本地，无 docker 时跳过）
+if command -v docker >/dev/null 2>&1; then
+  echo "==> 构建镜像 v${NEWVER}"
+  docker build -t "cost-backend:${NEWVER}"  -f cost_backend/Dockerfile cost_backend
+  docker build -t "cost-worker:${NEWVER}"   -f cost_backend/Dockerfile cost_backend
+  docker build -t "cost-flower:${NEWVER}"   -f cost_backend/Dockerfile cost_backend
+  docker build -t "cost-web:${NEWVER}"      -f cost_web/Dockerfile cost_web
+  # 同时打 latest 标签，便于本地 latest 部署
+  for s in backend worker flower web; do
+    docker tag "cost-${s}:${NEWVER}" "cost-${s}:latest"
+  done
+  echo "✓ 镜像已构建并打标 :${NEWVER} / :latest"
+else
+  echo "⚠️ 未检测到 docker，跳过镜像构建（CI 或本机装有 docker 时自动构建）"
+fi
 
 # 3) 生成发布说明
 bash scripts/gen-release-notes.sh "$NEWVER" > RELEASES.md
@@ -51,7 +54,8 @@ echo "✓ 已更新 CHANGELOG.md"
 
 # 5) 写 .env 的 IMAGE_TAG（指向新版本）
 if [ -f .env ]; then
-  grep -v '^IMAGE_TAG=' .env > .env.tmp && mv .env.tmp .env
+  grep -v '^IMAGE_TAG=' .env > .env.tmp 2>/dev/null || true
+  mv .env.tmp .env
 else
   cp .env.example .env 2>/dev/null || touch .env
 fi
