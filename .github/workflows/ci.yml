@@ -56,6 +56,7 @@ jobs:
         run: pytest tests -q
 
       - name: Smoke - 历史数据迁移（验证 183MB 真实文件可入库）
+        if: hashFiles('data/user-data.json') != ''
         env:
           DATABASE_URL: sqlite+aiosqlite:///./test_cost.db
           USE_LOCAL_STORAGE: "true"

@@ -133,7 +133,19 @@ def test_migration_run_requires_super(client, seed_data):
 
 
 def test_migration_preview(client):
-    """预览接口返回文件体积与计数（用真实 184MB 文件，只读不写库）。"""
+    """预览接口返回文件体积与计数（用真实 184MB 文件，只读不写库）。
+
+    CI 环境未提交 184MB 真实数据文件时自动跳过，避免在无 fixtures 时失败。
+    """
+    from core.config import settings
+
+    path = settings.MIGRATION_DATA_PATH
+    if not os.path.isfile(path):
+        pytest.skip(f"migration data file not found: {path}")
+    size = os.path.getsize(path)
+    if size < 100_000_000:
+        pytest.skip(f"migration data file too small for preview assertion: {size} bytes")
+
     token = _login(client, "admin", "admin123")
     h = {"Authorization": f"Bearer {token}"}
     r = client.get(f"{API}/migration/preview", headers=h)
