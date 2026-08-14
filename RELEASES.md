@@ -1,25 +1,25 @@
-# 造价平台 v1.0.2
+# 造价平台 v1.0.3
 
 发布时间：2026-08-14
-版本号：**1.0.2**
+版本号：**1.0.3**
 
-提交范围：`v1.0.1..v1.0.2`
+提交范围：`v1.0.2..v1.0.3`
 提交数量：**1** 个
 
 ## 变更摘要
 
-- **发布闭环**：变更 1 项
+- **其他**：变更 1 项
 
 ## 提交明细
 
-- `4ad81b5` chore: 记录 v1.0.1 部署历史
+- `627cfbd` fix(deps): add missing openpyxl and bsdiff4 for tests; use sqlalchemy without deprecated async extra
 
 ## 部署方式
 
 1. 拉取/构建版本化镜像后，使用版本标签启动：
 
 ```bash
-IMAGE_TAG=1.0.2 docker compose up -d
+IMAGE_TAG=1.0.3 docker compose up -d
 ```
 
 2. 回滚到上一版本：
