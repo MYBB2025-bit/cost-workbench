@@ -31,3 +31,9 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["api", "core", "db", "service", "repository", "utils", "tasks", "models"]
+
+[tool.pytest.ini_options]
+# 将后端根目录注入 sys.path，使 `from core/db/service/main import ...` 在
+# `pytest` 控制台脚本与 `python -m pytest` 两种调用下都能解析（CI 用前者，不加 cwd）。
+pythonpath = ["."]
+testpaths = ["tests"]

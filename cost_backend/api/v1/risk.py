@@ -36,7 +36,7 @@ async def risk_item_update(item_id: int, payload: RiskItemUpdate,
 async def risk_item_delete(item_id: int, db: AsyncSession = Depends(get_db)):
     if not await risk_service.delete_risk_item(db, item_id):
         raise HTTPException(status_code=404, detail="风险项不存在")
-    return {"ok": True}
+    return {"deleted": True}
 
 
 @router.get("/warnings")

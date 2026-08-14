@@ -1,5 +1,5 @@
 """客户端更新路由（重点）：版本检测 / 补丁下载 / 版本发布 / 补丁上传。"""
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -144,8 +144,8 @@ async def publish_version(body: dict, db: AsyncSession = Depends(get_db)):
 @router.post("/patch/upload", dependencies=[Depends(require_perm("client:patch:upload"))])
 async def upload_patch(
     file: UploadFile = File(...),
-    from_version: str = "",
-    to_version: str = "",
+    from_version: str = Query(""),
+    to_version: str = Query(""),
     db: AsyncSession = Depends(get_db),
 ):
     """上传 bsdiff 补丁文件，记录元数据（md5/大小）。"""

@@ -4,7 +4,7 @@
 - POST /migration/run      触发迁移：创建 TaskJob 并派发 Celery 异步任务
 前端可轮询 GET /task/{job_id} 查看进度（migrate_user_data_task 复用同一 TaskJob）。
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.deps import get_current_user, require_perm
@@ -19,7 +19,10 @@ router = APIRouter(prefix="/migration", tags=["历史数据迁移"])
 async def migration_preview():
     """预览待迁移文件的体积与各实体计数（不写库）。"""
     path = migration_service.get_migration_path()
-    return await migration_service.preview_user_data(path)
+    try:
+        return await migration_service.preview_user_data(path)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"迁移源文件不存在：{path}")
 
 
 @router.post("/run", dependencies=[Depends(require_perm("*"))])
